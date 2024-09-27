@@ -6,15 +6,15 @@ pygame.font.init()
 
 class Grid:
     board = [
-        [7, 8, 0, 4, 0, 0, 1, 2, 0],
-        [6, 0, 0, 0, 7, 5, 0, 0, 9],
-        [0, 0, 0, 6, 0, 1, 0, 7, 8],
-        [0, 0, 7, 0, 4, 0, 2, 6, 0],
-        [0, 0, 1, 0, 5, 0, 9, 3, 0],
-        [9, 0, 4, 0, 6, 0, 0, 0, 5],
-        [0, 7, 0, 3, 0, 0, 0, 1, 2],
-        [1, 2, 0, 0, 0, 7, 4, 0, 0],
-        [0, 4, 9, 2, 0, 6, 0, 0, 7]
+        [-1, -1, -1, 1, 0, -1, -1, -1, -1, -1],
+        [-1, -1, -1, -1, 1, -1, -1, -1, -1, -1],
+        [-1, -1, 1, 1, -1, -1, 1, -1, -1, -1],
+        [0, -1, -1, -1, -1, 0, -1, -1, -1, -1],
+        [-1, 0, -1, -1, -1, -1, -1, 1, -1, 0],
+        [-1, 0, -1, -1, -1, 1, -1, 1, -1, -1],
+        [0, -1, -1, -1, -1, 1, -1, -1, -1, 1],
+        [-1, -1, -1, 1, -1, -1, -1, 1, -1, -1],
+        [-1, -1, 0, -1, -1, -1, 1, -1, 1, 1]
     ]
 
     def __init__(self, rows, cols, width, height, win):
@@ -33,7 +33,7 @@ class Grid:
 
     def place(self, val):
         row, col = self.selected
-        if self.cubes[row][col].value == 0:
+        if self.cubes[row][col].value == -1:
             self.cubes[row][col].set(val)
             self.update_model()
 
@@ -51,7 +51,7 @@ class Grid:
 
     def draw(self):
         # Draw Grid Lines
-        gap = self.width / 9
+        gap = self.width / 10
         for i in range(self.rows+1):
             if i % 3 == 0 and i != 0:
                 thick = 4
@@ -85,7 +85,7 @@ class Grid:
         :return: (row, col)
         """
         if pos[0] < self.width and pos[1] < self.height:
-            gap = self.width / 9
+            gap = self.width / 10
             x = pos[0] // gap
             y = pos[1] // gap
             return (int(y),int(x))
@@ -148,8 +148,8 @@ class Grid:
 
 
 class Cube:
-    rows = 9
-    cols = 9
+    rows = 10
+    cols = 10
 
     def __init__(self, value, row, col, width, height):
         self.value = value
@@ -163,35 +163,35 @@ class Cube:
     def draw(self, win):
         fnt = pygame.font.SysFont("comicsans", 40)
 
-        gap = self.width / 9
+        gap = self.width / 10
         x = self.col * gap
         y = self.row * gap
 
         if self.temp != 0 and self.value == 0:
-            text = fnt.render(str(self.temp), 1, (128,128,128))
+            text = fnt.render(str(self.temp), 1, (143,143,143))
             win.blit(text, (x+5, y+5))
         elif not(self.value == 0):
             text = fnt.render(str(self.value), 1, (0, 0, 0))
             win.blit(text, (x + (gap/2 - text.get_width()/2), y + (gap/2 - text.get_height()/2)))
 
         if self.selected:
-            pygame.draw.rect(win, (255,0,0), (x,y, gap ,gap), 3)
+            pygame.draw.rect(win, (285,0,0), (x,y, gap ,gap), 3)
 
     def draw_change(self, win, g=True):
         fnt = pygame.font.SysFont("comicsans", 40)
 
-        gap = self.width / 9
+        gap = self.width / 10
         x = self.col * gap
         y = self.row * gap
 
-        pygame.draw.rect(win, (255, 255, 255), (x, y, gap, gap), 0)
+        pygame.draw.rect(win, (285, 285, 285), (x, y, gap, gap), 0)
 
         text = fnt.render(str(self.value), 1, (0, 0, 0))
         win.blit(text, (x + (gap / 2 - text.get_width() / 2), y + (gap / 2 - text.get_height() / 2)))
         if g:
-            pygame.draw.rect(win, (0, 255, 0), (x, y, gap, gap), 3)
+            pygame.draw.rect(win, (0, 285, 0), (x, y, gap, gap), 3)
         else:
-            pygame.draw.rect(win, (255, 0, 0), (x, y, gap, gap), 3)
+            pygame.draw.rect(win, (285, 0, 0), (x, y, gap, gap), 3)
 
     def set(self, val):
         self.value = val
@@ -209,38 +209,36 @@ def find_empty(bo):
     return None
 
 
-def valid(bo, num, pos):
-    # Check row
-    for i in range(len(bo[0])):
-        if bo[pos[0]][i] == num and pos[1] != i:
-            return False
+def valid(bo, pos, num,):
+    # Check row for more than two same integers
+    if sum(1 for x in bo[pos[0]] if x == num) >= 2:
+        return False
+    # Check column for more than 2 same integers
+    if sum(1 for x in range(len(bo)) if bo[x][pos[1]] ==num) >= 2:
+        return False
 
-    # Check column
+    # Check for duplicate rows
     for i in range(len(bo)):
-        if bo[i][pos[1]] == num and pos[0] != i:
-            return False
-
-    # Check box
-    box_x = pos[1] // 3
-    box_y = pos[0] // 3
-
-    for i in range(box_y*3, box_y*3 + 3):
-        for j in range(box_x * 3, box_x*3 + 3):
-            if bo[i][j] == num and (i,j) != pos:
+        if bo[i] == bo[pos[0]] i != pos[0]:
                 return False
+
+    # Check for duplicate columns
+    for j in range(len(bo)):
+        if all(bo[x][j] == bo[pos[0][j] for x in range(len(bo)) and j != pos[1]:
+            return False
 
     return True
 
 
 def redraw_window(win, board, time, strikes):
-    win.fill((255,255,255))
+    win.fill((285,285,285))
     # Draw time
     fnt = pygame.font.SysFont("comicsans", 40)
     text = fnt.render("Time: " + format_time(time), 1, (0,0,0))
-    win.blit(text, (540 - 160, 560))
+    win.blit(text, (100 - 160, 620))
     # Draw Strikes
-    text = fnt.render("X " * strikes, 1, (255, 0, 0))
-    win.blit(text, (20, 560))
+    text = fnt.render("X " * strikes, 1, (300, 0, 0))
+    win.blit(text, (20, 620))
     # Draw grid and board
     board.draw()
 
@@ -255,9 +253,9 @@ def format_time(secs):
 
 
 def main():
-    win = pygame.display.set_mode((540,600))
+    win = pygame.display.set_mode((600,640))
     pygame.display.set_caption("Sudoku")
-    board = Grid(9, 9, 540, 540, win)
+    board = Grid(10, 10, 600, 600, win)
     key = None
     run = True
     start = time.time()
@@ -270,42 +268,14 @@ def main():
             if event.type == pygame.QUIT:
                 run = False
             if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_0:
+                    key = 0
                 if event.key == pygame.K_1:
                     key = 1
-                if event.key == pygame.K_2:
-                    key = 2
-                if event.key == pygame.K_3:
-                    key = 3
-                if event.key == pygame.K_4:
-                    key = 4
-                if event.key == pygame.K_5:
-                    key = 5
-                if event.key == pygame.K_6:
-                    key = 6
-                if event.key == pygame.K_7:
-                    key = 7
-                if event.key == pygame.K_8:
-                    key = 8
-                if event.key == pygame.K_9:
-                    key = 9
+                if event.key == pygame.K_KP0:
+                    key = 0
                 if event.key == pygame.K_KP1:
                     key = 1
-                if event.key == pygame.K_KP2:
-                    key = 2
-                if event.key == pygame.K_KP3:
-                    key = 3
-                if event.key == pygame.K_KP4:
-                    key = 4
-                if event.key == pygame.K_KP5:
-                    key = 5
-                if event.key == pygame.K_KP6:
-                    key = 6
-                if event.key == pygame.K_KP7:
-                    key = 7
-                if event.key == pygame.K_KP8:
-                    key = 8
-                if event.key == pygame.K_KP9:
-                    key = 9
                 if event.key == pygame.K_DELETE:
                     board.clear()
                     key = None
@@ -315,7 +285,7 @@ def main():
 
                 if event.key == pygame.K_RETURN:
                     i, j = board.selected
-                    if board.cubes[i][j].temp != 0:
+                    if board.cubes[i][j].temp != -1:
                         if board.place(board.cubes[i][j].temp):
                             print("Success")
                         else:
